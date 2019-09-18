@@ -1,14 +1,19 @@
 import tensorflow as tf
 import numpy as np
 import collections
+import utils
+import os
 
 class StyleTransfer:
 
     def __init__(self, content_layer_ids, style_layer_ids, init_image, content_image,
-                 style_image, session, net, num_iter, loss_ratio, content_loss_norm_type):
+                 style_image, session, net, num_iter, loss_ratio, content_loss_norm_type,
+                 save_iters, output_path):
 
         self.net = net
         self.sess = session
+        self.save_iters = save_iters
+        self.output_path = output_path
 
         # sort layers info
         self.CONTENT_LAYERS = collections.OrderedDict(sorted(content_layer_ids.items()))
@@ -106,9 +111,12 @@ class StyleTransfer:
         # this call back function is called every after loss is updated
         global _iter
         _iter = 0
-        def callback(tl, cl, sl):
+        def callback(tl, cl, sl, img):
             global _iter
             print('iter : %4d, ' % _iter, 'L_total : %g, L_content : %g, L_style : %g' % (tl, cl, sl))
+            if _iter % self.save_iters == 0:
+                path, file = os.path.split(self.output_path)
+                utils.save_image(np.clip(self.net.undo_preprocess(img[0]), 0.0, 255.0), "{}/{}.png".format(path, _iter))
             _iter += 1
 
         optimizer = tf.contrib.opt.ScipyOptimizerInterface(self.L_total, method='L-BFGS-B', options={'maxiter': self.num_iter})
@@ -120,7 +128,7 @@ class StyleTransfer:
 
         # optmization
         optimizer.minimize(self.sess,feed_dict={self.a:self.a0, self.p:self.p0},
-                           fetches=[self.L_total, self.L_content, self.L_style], loss_callback=callback)
+                           fetches=[self.L_total, self.L_content, self.L_style, self.x], loss_callback=callback)
 
         """ get final result """
         final_image = self.sess.run(self.x)

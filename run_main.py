@@ -32,6 +32,8 @@ def parse_args():
     parser.add_argument('--content_loss_norm_type', type=int, default=3, choices=[1,2,3], help='Different types of normalization for content loss')
     parser.add_argument('--num_iter', type=int, default=1000, help='The number of iterations to run')
 
+    parser.add_argument('--save_every', type=int, default=10, help='Number of iterations to save')
+
     return check_args(parser.parse_args())
 
 """checking arguments"""
@@ -142,6 +144,8 @@ def main():
                                       num_iter = args.num_iter,
                                       loss_ratio = args.loss_ratio,
                                       content_loss_norm_type = args.content_loss_norm_type,
+                                      save_iters = args.save_every,
+                                      output_path = args.output
                                       )
     # launch the graph in a session
     result_image = st.update()
